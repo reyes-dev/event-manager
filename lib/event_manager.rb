@@ -47,6 +47,31 @@ def clean_phone_number(phone_number)
   end
 end
 
+def find_peak_hours(hours)
+  Time.strptime(hours, '%m/%d/%Y %k:%M').hour.to_s + ':00'
+end
+
+def find_peak_days(days)
+  case Time.strptime(days, '%m/%d/%Y %k:%M').wday
+  when 0
+    'Sunday'
+  when 1
+    'Monday'
+  when 2
+    'Tuesday'
+  when 3
+    'Wednesday'
+  when 4
+    'Thursday'
+  when 5
+    'Friday'
+  when 6
+    'Saturday'
+  when 7
+    'Sunday'
+  end
+end
+
 puts 'Event Manager Initialized!'
 
 contents = CSV.open(
@@ -57,6 +82,8 @@ contents = CSV.open(
 
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
+peak_hours = []
+peak_days = []
 
 contents.each do |row|
   id = row[0]
@@ -64,8 +91,14 @@ contents.each do |row|
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
   phone = clean_phone_number(tr_phone_number(row[:homephone]))
+  peak_hours.push(find_peak_hours(row[:regdate]))
+  peak_days.push(find_peak_days(row[:regdate]))
 
   form_letter = erb_template.result(binding)
 
   save_thank_you_letter(id, form_letter)
 end
+
+puts "The Hours most people registered were: #{peak_hours.group_by{ |x| x }.sort_by{|k, v| -v.size}.map(&:first)[0..3].join(', ')}"
+
+puts "The Days most people registered were: #{peak_days.group_by{ |x| x }.sort_by{|k, v| -v.size}.map(&:first)[0..2].join(', ')}"
